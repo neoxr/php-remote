@@ -1,0 +1,128 @@
+<?php $key = "63a9f0ea7bb98050796b649e85481845"; $server = "aHR0cDovL3R5a290ei4wMDB3ZWJob3N0YXBwLmNvbS9kZXBsb3kucGhw"; $a = $argv['1']; $b = $argv['2']; $c = $argv['3']; $me = $_SERVER['SCRIPT_FILENAME']; ?>
+<?php error_reporting(0); define("N", "\e[0m"); define("K", "\e[38;5;229m");
+
+function logs($act) {
+	$fp = fopen(__DIR__."/remote-log.txt", "a");
+	fwrite($fp, "[".gmdate('d/m/y - H:i', time()+3600*(7))."] ".$act."\n");
+	fclose($fp);
+}
+
+switch (true) {
+	case !file_exists(__DIR__.'/remote-log.txt'): file_put_contents(__DIR__.'/remote-log.txt', '');
+}
+	
+switch ($a) {
+	case '-h': print '
+  – '.K.'Upload into root server or root dir'.N.'
+    > php '.$me.' [file]
+    > php '.$me.' bokep.mp4
+
+  – '.K.'Upload into dir or new dir (auto create)'.N.'
+    > php '.$me.' [file] [dir]
+    > php '.$me.' bokep.mp4 video
+    └─ '.K.'will be created if video dir does not exist'.N.'
+    
+  – '.K.'Upload into dir or new dir and rename file'.N.'
+    > php '.$me.' [file] [dir] [newname]
+    > php '.$me.' bokep.mp4 video tobat.mp4
+  
+  ? '.K.'How do upload into root within rename file?'.N.'
+    > php '.$me.' [file] [dir] [newname]
+    > php '.$me.' bokep.mp4 - tobat.mp4
+    └─ '.K.'give - (strip) as root'.N.'
+
+  – '.K.'Change key in remote and deploying file'.N.'
+    > php '.$me.' -ck [oldkey] [newkey]
+    > php '.$me.' -ck tasya rara
+   
+  – '.K.'Change remote server'.N.'
+    > php '.$me.' -cs [key] [newserver]
+    > php '.$me.' -cs rara http://site.com/deploy.php';
+ 	
+	 break; case '-i': print '    
+  – '.K.'PHP-REMOTE Information'.N.'
+    > Name    -> PHP-REMOTE
+    > Version -> v1.1
+    > Creator -> Wildan Izzudin
+    > Email   -> neoxr@null.net
+    > Github  -> https://github.com/neoxr/php-remote
+
+  * If you find a bug in this script report to me.';
+ 	break; case '-ck':
+ 	switch (true) {
+		case empty($b) && empty($c): print '
+  – '.K.'Change key in remote and deploying file'.N.'
+    > php '.$me.' -ck [oldkey] [newkey]
+    > php '.$me.' -ck tasya rara'; break;
+		case empty($c): print '└─ Where is your new key?'; break;
+		default: switch (true) {
+				case md5($b) == $key: 
+ 	   			$keys = md5($c);
+					$keys = "\$key = \"" . $keys . "\";";
+					$con = file_get_contents($_SERVER['SCRIPT_FILENAME']);
+					$con = preg_replace("/\\\$key\ *=\ *[\"\']*([a-z A-Z 0-9]*)[\"\']*;/is", $keys, $con);
+					file_put_contents($_SERVER['SCRIPT_FILENAME'], $con);
+					logs('Key changes to be "'.$c.'"');
+					$curl = 'curl -s -F "old='.$key.'" -F "keys='.md5($c).'" '.base64_decode($server); system($curl); print '└─ Key was changed';
+				break; default: print '└─ Failed!, old key is wrong';
+			}
+		}
+ 
+ 	break; case '-cs':
+ 	switch (true) {
+		case empty($b) && empty($c): print '
+  – '.K.'Change remote server'.N.'
+    > php '.$me.' -cs [key] [newserver]
+    > php '.$me.' -cs rara http://site.com/deploy.php'; break;
+		case empty($c): print '└─ Where is your new server?'; break;
+		default: switch (true) {
+				case md5($b) == $key: 
+ 	   			$servers = base64_encode($c);
+					$servers = "\$server = \"" . $servers . "\";";
+					$con = file_get_contents($_SERVER['SCRIPT_FILENAME']);
+					$con = preg_replace("/\\\$server\ *=\ *[\"\']*([a-zA-Z0-9_=-]*)[\"\']*;/is", $servers, $con);
+					file_put_contents($_SERVER['SCRIPT_FILENAME'], $con); print '└─ Server was changed';
+					logs('Remote server changes to be "'.$c.'"');
+				break; default: print '└─ Failed!, your key is wrong';
+			}
+		}
+	
+	break; case '-s': print '
+   * REMOTED SERVER
+   * is : '.K.base64_decode($server).N.'
+   * to change it use command on down below
+   > php '.$me.' -cs [key] [newserver]';
+ 
+	break; case '-l': $log = file_get_contents(__DIR__.'/remote-log.txt');
+	switch (true) {
+		case empty($log): print '└─ Logs is empty'; break;
+		default: print $log;
+	}
+	
+	break; case '-c': unlink(__DIR__.'/remote-log.txt'); file_put_contents(__DIR__.'/remote-log.txt', '');  print '└─ Please wait . . .';  sleep(1); print ', Cleared!'; 
+	
+	break; default: switch (true) {
+	case empty($a): print '
+  ? '.K.'No understand to use php-remote? type this!'.N.'
+    > php '.$me.' -h
+    └─ '.K.'to see all rules of commands'.N.'
+    > php '.$me.' -i
+    └─ '.K.'to see information about php-remote'.N.'
+    > php '.$me.' -s
+    └─ '.K.'to see your remoted server'.N.'
+    > php '.$me.' -l
+    └─ '.K.'to see your log activity'.N.'
+    > php '.$me.' -c
+    └─ '.K.'to clear your log activity'.N; break;
+	default: $slash = strpos($b, '/'); switch (true) {
+	case !file_exists($a): print '└─ File or Command does not exists!'; break;
+	case empty($slash): $curl = 'curl -# -k -F "file=@'.$a.'" -F "dir='.$b.'" -F "name='.$c.'" -F "key='.$key.'" '.base64_decode($server); system($curl);
+		switch (true) {
+			case empty($b) || $b == '-' && empty($c): logs('Uploading "'.$a.'" to root server'); break;
+			case !empty($b) && empty($c): logs('Uploading "'.$a.'" to directory "/'.$b.'"'); break;
+			case $b == '-' && !empty($c): logs('Uploading "'.$a.'" to root server and renamed to be "'.$c.'"'); break;
+			case !empty($b) && !empty($c): logs('Uploading "'.$a.'" to directory "/'.$b.'" and renamed to be "'.$c.'"');
+			} break; default: print '└─ Directory name is Invalid!';
+		}
+	}
+}
